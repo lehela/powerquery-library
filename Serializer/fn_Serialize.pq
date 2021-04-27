@@ -25,6 +25,7 @@ func =
                 Functions = {
             [Type = Table.Type, FromText = [Function = (v)=>v, Arguments = {"$VAL"}], ToText = [Function = fn_TableToText, Arguments = {"$VAL"}]], 
             [Type = Record.Type, FromText = [Function = (v)=>v, Arguments = {"$VAL"}], ToText = [Function = fn_RecordToText, Arguments = {"$VAL"}]], 
+            [Type = List.Type, FromText = [Function = (v)=>v, Arguments = {"$VAL"}], ToText = [Function = fn_ListToText, Arguments = {"$VAL"}]], 
             [Type = Binary.Type, FromText = [Function = Binary.FromText, Arguments = {"$VAL"}], ToText = [Function = Binary.ToText, Arguments = {"$VAL"}]], 
             [Type = Date.Type, FromText = [Function = Date.FromText, Arguments = {"$VAL"}], ToText = [Function = Date.ToText, Arguments = {"$VAL"}]], 
             [Type = Number.Type, FromText = [Function = Number.FromText, Arguments = {"$VAL"}], ToText = [Function = Number.ToText, Arguments = {"$VAL"}]], 
@@ -85,6 +86,18 @@ func =
             in
                 Output
     ,
+        fn_ListToText = 
+            (lst as list) as text =>
+            let
+                In1 = try lst otherwise {"Normal Text", """Hello"""}
+            ,
+                Source = In1,
+                FieldsToText = List.Transform(Source, (val)=> fn_SerializeRecursively(val)),
+                ListToText = Text.Combine({ "{", Text.Combine(FieldsToText, ","), "}"}),
+                Output = ListToText
+            in
+                Output
+    ,
         fn_RecordToText = 
             (rec as record) as text =>
             let
@@ -93,7 +106,7 @@ func =
                 Source = In1,
                 Table = Record.ToTable(Source),
                 FieldsToText = Table.TransformRows(Table, (row)=>
-            row[Name] & " = " & fn_SerializeRecursively(row[Value])
+                "#""" & row[Name] & """ = " & fn_SerializeRecursively(row[Value])
             ),
                 RecordToText = Text.Combine({ "[", Text.Combine(FieldsToText, ","), "]"}),
                 Output = RecordToText
