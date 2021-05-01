@@ -1,4 +1,4 @@
-(tbl as table, optional separator as text) as table =>
+(tbl as table, columns, collapsedName, optional separator as text) as table =>
 let
     DebugTable = Table.FromRecords({}),
     DebugAuto = [

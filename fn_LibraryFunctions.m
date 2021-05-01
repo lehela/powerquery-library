@@ -11,9 +11,17 @@ try Record.AddField(state, current[FunctionName], Expression.Evaluate(current[Co
 otherwise state
 ),
     #"Non-Core Code" = Table.SelectRows(#"+Code", (row)=> List.Contains( Record.FieldNames(#"Core Functions"), row[FunctionName]) = false),
-    #"Extended Functions" = try List.Accumulate( Table.ToRecords(#"Non-Core Code"), #"Core Functions", (state, current) =>
-try Record.AddField(state, current[FunctionName], Expression.Evaluate(current[Code], Record.Combine({#shared, #"Core Functions"})))
-otherwise Record.AddField(state, current[FunctionName], "Could not evaluate code without error: ")
+    #"Extended Functions" = try List.Accumulate( 
+            Table.ToRecords(#"Non-Core Code"), 
+            #"Core Functions", 
+            (state, current) =>
+                let
+                evaluate = try Record.AddField(state, current[FunctionName], 
+                                    Expression.Evaluate(current[Code], Record.Combine({#shared, #"Core Functions"}))),
+                result = if evaluate[HasError] 
+                        then  Record.AddField(state, current[FunctionName], "Evaluation failed: " & evaluate[Error][Message])
+                        else evaluate[Value]
+                in result
 ),
     OutputRecord_Functions = if #"Extended Functions"[HasError] then #"Extended Functions"[Error] else #"Extended Functions"[Value],
     CountFunctions = try Table.RowCount(#"Filtered PQ") otherwise 0,
