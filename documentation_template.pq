@@ -4,30 +4,15 @@ let
             Output = "Dummy output"
         in
             Output,
-    docType = 
-        let
-            funcType = Value.Type(func),
-            funcParams = Type.FunctionParameters(funcType),
-            funcParamsDoc = Record.TransformFields(funcParams,
-                    List.Transform(ParametersDoc, (doc)=> {doc[Name], (parType)=> Value.ReplaceMetadata(parType, doc)})
-                )
-        in
-            Type.ForFunction(
-                [
-                    ReturnType = Type.FunctionReturn(funcType),
-                    Parameters = funcParamsDoc
-                ]
-                , Type.FunctionRequiredParameters(funcType)
-            ) meta FunctionDoc
-    ,
     FunctionDoc = 
         [
         Documentation.Name = "fn_documentation_demo",
         Documentation.Description = 
-                "This function simply demos how custom functions can be documented.</p>" &
-                "The variable <code>FunctionDoc</code> contains the documentation record for the function itself<br>" &
-                "The variable <code>ParameterDoc</code> contains a list of parameter documentation records. Undocumented parameters do not need to be listed, as the <code>docType</code> expression applies the parameters dynamically onto the function. " &
-                "</p>Moreover, here are some supported HTML formattings that can be used in the <code>Documentation.Description</code>:</br>" &
+                "This function simply demos how custom functions can be documented more easily. The following variables can be populated, and are then applied by the <code>fn_createDocType</code> function:<br>" &
+                " - <code>FunctionDoc</code> contains the documentation record for the function itself<br>" &
+                " - <code>ParameterDoc</code> contains a list of optional parameter documentation records, e.g. to limit allowed input values." & 
+                "</p>The <code>fn_createDocType</code> function dynamically updates only explicitly listed parameters, so there is no need to list parameters which do not need any documentation or allowed value limits." &
+                "</p>Moreover, here are some supported HTML formattings that can be used in the <code>Documentation.Description</code> field:</br>" &
                 "<ul>" &
                 "<li>&lt;/p&gt: Paragraph break" &
                 "<li>&lt;br&gt: Normal line break" &
@@ -53,7 +38,26 @@ let
             Documentation.AllowedValues = {"Value 1", "Value 2", "Value 3"}
             ]
             }
+    ,
+    fn_createDocType = (fn as function, fn_doc as record, optional param_doc as list) as type => 
+        let
+            funcType = Value.Type(fn),
+            funcParams = Type.FunctionParameters(funcType),
+            funcParamsDoc = Record.TransformFields(funcParams,
+                    try List.Transform(param_doc, (doc)=> {doc[Name], (parType)=> Value.ReplaceMetadata(parType, doc)})
+                    otherwise {}
+                )
+        in
+            Type.ForFunction(
+                [
+                    ReturnType = Type.FunctionReturn(funcType),
+                    Parameters = funcParamsDoc
+                ]
+                , Type.FunctionRequiredParameters(funcType)
+            ) meta fn_doc
+
+
 
 
 in
-    Value.ReplaceType(func, docType)
+    Value.ReplaceType(func, fn_createDocType(func, FunctionDoc, ParametersDoc))
